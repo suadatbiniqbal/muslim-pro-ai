@@ -10,19 +10,24 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const messagesContainerRef = useRef(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }
 
   useEffect(() => {
     if (messages.length > 0) {
-      scrollToBottom()
+      setTimeout(scrollToBottom, 100)
     }
   }, [messages])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    e.stopPropagation()
+    
     if (!input.trim() || isLoading) return
 
     const userMessage = input.trim()
@@ -30,6 +35,9 @@ const Chat = () => {
     
     setMessages((prev) => [...prev, { text: userMessage, isUser: true }])
     setIsLoading(true)
+
+    // Keep focus on input
+    setTimeout(() => inputRef.current?.focus(), 0)
 
     try {
       const response = await fetch(
@@ -58,7 +66,7 @@ const Chat = () => {
       ])
     } finally {
       setIsLoading(false)
-      inputRef.current?.focus()
+      setTimeout(() => inputRef.current?.focus(), 0)
     }
   }
 
@@ -67,16 +75,14 @@ const Chat = () => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="w-full h-screen flex flex-col pt-16"
-      style={{ height: '100vh', height: '100dvh' }}
-    >
-      {/* Header - Fixed Top */}
-      <div className="flex-none w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-white/10 bg-black z-10">
+    <div className="fixed inset-0 pt-16 flex flex-col bg-black overflow-hidden">
+      {/* Header - Fixed */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex-none w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-white/10 bg-black z-20"
+      >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">
@@ -98,17 +104,20 @@ const Chat = () => {
             </motion.button>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Messages Area - Scrollable */}
-      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 w-full overflow-y-auto overflow-x-hidden"
+      >
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-4">
           {messages.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
-              className="flex items-center justify-center min-h-[50vh]"
+              className="flex items-center justify-center min-h-full py-8"
             >
               <div className="glass-effect rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-2xl">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-3 text-center">
@@ -157,7 +166,12 @@ const Chat = () => {
       </div>
 
       {/* Input Box - Fixed Bottom */}
-      <div className="flex-none w-full border-t border-white/10 bg-black z-10">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="flex-none w-full border-t border-white/10 bg-black z-20"
+      >
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <form onSubmit={handleSubmit}>
             <div className="glass-effect rounded-xl sm:rounded-2xl p-2 sm:p-3 border border-white/10">
@@ -171,6 +185,12 @@ const Chat = () => {
                   className="flex-1 bg-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base px-2 py-2"
                   disabled={isLoading}
                   autoComplete="off"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSubmit(e)
+                    }
+                  }}
                 />
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -190,8 +210,8 @@ const Chat = () => {
             </div>
           </form>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }
 
