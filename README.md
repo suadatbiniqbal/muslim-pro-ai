@@ -25,6 +25,7 @@ text
 
 ---
 
+
 ## ✨ Features
 
 - 🤖 **AI-Powered Chat** - Get intelligent answers about Islam, Quran, and Hadith
